@@ -1,36 +1,45 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
+// ------------------------------ ESP NOW start ------------------------------ //
 // REPLACE WITH YOUR RECEIVER MAC Address
 uint8_t receiverMacAddress[] = {0x34,0x85,0x18,0x42,0x70,0xF4};  //34:85:18:42:70:F4
 
 struct PacketData
 {
-  unsigned int lxAxisValue;
-  unsigned int lyAxisValue;
-  unsigned int rxAxisValue;
-  unsigned int ryAxisValue;
-
+  byte rxAxisValue;
+  byte ryAxisValue;
 };
 PacketData data;
 
+// callback when data is sent
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
+{
+  Serial.print("\r\nLast Packet Send Status:\t ");
+  Serial.println(status);
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Message sent" : "Message failed");
+}
+// ------------------------------ ESP NOW end ------------------------------ //
+
+
+// ------------------------------ JOYSTICK MAPING start ------------------------------ //
 //This function is used to map 0-4095 joystick value to 0-254. hence 127 is the center value which we send.
 //It also adjust the deadband in joystick.
 //Jotstick values range from 0-4095. But its center value is not always 2047. It is little different.
 //So we need to add some deadband to center value. in our case 1800-2200. Any value in this deadband range is mapped to center 127.
-unsigned int mapAndAdjustJoystickDeadBandValues(int value, bool reverse)
+byte mapAndAdjustJoystickDeadBandValues(int value, bool reverse)
 {
   if (value >= 2200)
   {
-    value = map(value, 2200, 4095, 307, 387);
+    value = map(value, 2200, 4095, 35, 70);
   }
   else if (value <= 1900)
   {
-    value = map(value, 1900, 0, 307, 227);  
+    value = map(value, 1900, 0, 35, 0);  
   }
   else
   {
-    value = 307;
+    value = 35;
   }
 
   if (reverse)
@@ -40,15 +49,12 @@ unsigned int mapAndAdjustJoystickDeadBandValues(int value, bool reverse)
   Serial.println(value);  
   return value;
 }
+// ------------------------------ JOYSTICK MAPING end ------------------------------ //
 
-// callback when data is sent
-void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
-{
-  Serial.print("\r\nLast Packet Send Status:\t ");
-  Serial.println(status);
-  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Message sent" : "Message failed");
-}
 
+
+
+// ------------------------------ SETUP start ------------------------------ //
 void setup() 
 {
   Serial.begin(115200);
@@ -91,12 +97,13 @@ void setup()
 
      delay(10000);
 }
+// ------------------------------ SETUP end ------------------------------ //
 
- 
+
+
+// ------------------------------ LOOP start ------------------------------ //
 void loop() 
 {
-  data.lxAxisValue    = mapAndAdjustJoystickDeadBandValues(analogRead(32), false);
-  data.lyAxisValue    = mapAndAdjustJoystickDeadBandValues(analogRead(33), false);
   data.rxAxisValue    = mapAndAdjustJoystickDeadBandValues(analogRead(34), false);
   data.ryAxisValue    = mapAndAdjustJoystickDeadBandValues(analogRead(35), false);
   
@@ -112,3 +119,9 @@ void loop()
   
   delay(50);
 }
+// ------------------------------  LOOP end ------------------------------ //
+
+
+
+
+
