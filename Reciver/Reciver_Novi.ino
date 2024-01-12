@@ -6,6 +6,7 @@
 #include <MPU6050_tockn.h>
 
 
+
 // ------------------------------ SENSOR PINS start ------------------------------ //
 #define SDA 20
 #define SCL 21
@@ -27,11 +28,17 @@ MPU6050 mpu6050(Wire); // Attach the IIC
 
 
 // ------------------------------ SERVO MOTORS start ------------------------------ //
+
+byte ESC_PIN = 14;
+byte ESC_CHN = 4;
 byte SERVO_PINS[4] = {10, 11, 12, 13};
 byte SERVO_CHN[4] = {0, 1, 2, 3};
-
 #define SERVO_FRQ 50 //define the pwm frequency
 #define SERVO_BIT 12 //define the pwm precision
+
+
+
+
 
 void servo_set_pin(int pin, byte chn);
 void servo_set_angle(int angle, byte chn);
@@ -47,6 +54,7 @@ struct PacketData
 {
   byte rxAxisValue;
   byte ryAxisValue;
+  byte potValue;
 };
 PacketData receiverData;
 
@@ -68,6 +76,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len)
 
 void mapAndWriteValues()
 {
+  ESC_CONTROL();
   mpu6050.update();
   FrontStabilization();
   BackStabilization();
@@ -95,10 +104,11 @@ void mapAndWriteValues()
 void Wheels()
 {
   // Wheels
+/*
   Serial.print("Altitude = ");
   Serial.print(bme.readAltitude(seaLevelPressure));
   Serial.println(" m");
-
+*/
   if(bme.readAltitude(seaLevelPressure) > start_altitude + 2)
     ledcWrite(SERVO_CHN[3], 512);
   else
@@ -169,6 +179,20 @@ void VerticalStabilization()
   //FrontWings.write(90 + servoPosition);
   ledcWrite(SERVO_CHN[2], servoPosition);
 }
+
+void ESC_CONTROL()
+{
+  int speed = map(receiverData.potValue, 0, 255, 1005, 1345);
+
+      Serial.print("Speed = ");
+      Serial.print(speed);
+      Serial.println("");
+
+  
+  //FrontWings.write(90 + servoPosition);
+  //ledcWrite(ESC_CHN, receiverData.potValue);
+  ledcWrite(ESC_CHN, speed);
+}
 // ------------------------------ CONTROL AND STABILIZATION end ------------------------------ //
 
 
@@ -200,6 +224,8 @@ void setup()
   {
     servo_set_pin(SERVO_PINS[i], SERVO_CHN[i]);
   }
+
+  servo_set_pin(ESC_PIN, ESC_CHN);
  
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
