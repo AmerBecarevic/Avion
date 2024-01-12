@@ -9,6 +9,7 @@ struct PacketData
 {
   byte rxAxisValue;
   byte ryAxisValue;
+  byte potValue;
 };
 PacketData data;
 
@@ -27,7 +28,7 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
 //It also adjust the deadband in joystick.
 //Jotstick values range from 0-4095. But its center value is not always 2047. It is little different.
 //So we need to add some deadband to center value. in our case 1800-2200. Any value in this deadband range is mapped to center 127.
-byte mapAndAdjustJoystickDeadBandValues(int value, bool reverse)
+byte mapAndAdjustJoystickDeadBandValues(int value)
 {
   if (value >= 2200)
   {
@@ -41,13 +42,22 @@ byte mapAndAdjustJoystickDeadBandValues(int value, bool reverse)
   {
     value = 35;
   }
-
-  if (reverse)
-  {
-    value = 254 - value;
-  }
   Serial.println(value);  
   return value;
+}
+// ------------------------------ JOYSTICK MAPING end ------------------------------ //
+
+
+// ------------------------------ JOYSTICK MAPING start ------------------------------ //
+//This function is used to map 0-4095 joystick value to 0-254. hence 127 is the center value which we send.
+//It also adjust the deadband in joystick.
+//Jotstick values range from 0-4095. But its center value is not always 2047. It is little different.
+//So we need to add some deadband to center value. in our case 1800-2200. Any value in this deadband range is mapped to center 127.
+byte mapAndAdjustPotentiometerValues(int value)
+{
+  int v = map(value, 0, 4095, 0, 255);
+  Serial.println(v);  
+  return v;
 }
 // ------------------------------ JOYSTICK MAPING end ------------------------------ //
 
@@ -104,8 +114,11 @@ void setup()
 // ------------------------------ LOOP start ------------------------------ //
 void loop() 
 {
-  data.rxAxisValue    = mapAndAdjustJoystickDeadBandValues(analogRead(34), false);
-  data.ryAxisValue    = mapAndAdjustJoystickDeadBandValues(analogRead(35), false);
+  data.rxAxisValue    = mapAndAdjustJoystickDeadBandValues(analogRead(34));
+  data.ryAxisValue    = mapAndAdjustJoystickDeadBandValues(analogRead(35));
+  data.potValue       = mapAndAdjustPotentiometerValues(analogRead(32));
+  Serial.println(analogRead(32));
+
   
   esp_err_t result = esp_now_send(receiverMacAddress, (uint8_t *) &data, sizeof(data));
   if (result == ESP_OK) 
