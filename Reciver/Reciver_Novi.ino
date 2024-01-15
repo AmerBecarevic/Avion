@@ -177,7 +177,7 @@ void VerticalStabilization()
       Serial.println(" degrees");
 */
   //FrontWings.write(90 + servoPosition);
-  ledcWrite(SERVO_CHN[2], servoPosition);
+  ledcWrite(SERVO_CHN[3], servoPosition);
 }
 
 void ESC_CONTROL()
