@@ -71,6 +71,30 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len)
 }
 // ------------------------------ ESP NOW end ------------------------------ //
 
+// ------------------------------ CLAMP and MAP FUNCTION start ----------------------------------- //
+int clamp(int val, int min, int max) {
+    if (val < min) {
+        return min;
+    } else if (val > max) {
+        return max;
+    } else {
+        return val;
+    }
+}
+
+int mapInt(int x, int in_min, int in_max, int out_min, int out_max) {
+    const int run = in_max - in_min;
+    if(run == 0){
+        log_e("map(): Invalid input range, min == max");
+        return -1; // AVR returns -1, SAM returns 0
+    }
+    const int rise = out_max - out_min;
+    const int delta = x - in_min;
+    return (delta * rise) / run + out_min;
+}
+
+// ------------------------------ CLAMP and MAP FUNCTION end ----------------------------------- //
+
 
 // ------------------------------ CONTROL AND STABILIZATION start ------------------------------ //
 
@@ -118,24 +142,28 @@ void Wheels()
 
 void FrontStabilization()
 {
-/*
+
       Serial.print("RX = ");
       Serial.print(receiverData.rxAxisValue);
       Serial.println(" degrees");
-*/
-  float gyroY = mpu6050.getAngleY() - 35 + receiverData.ryAxisValue;
-/*
+
+  //float gyroY = mpu6050.getAngleX() - 35 + receiverData.rxAxisValue;
+
+  float gyroY = mpu6050.getAngleX();
+
       Serial.print("Y = ");
       Serial.print(gyroY);
       Serial.println(" degrees");
-*/
-  int servoPosition = (gyroY + 35) * 177 / 70 + 212;
-  
-/*
+
+  int servoPosition = mapInt(gyroY, -35, 35, 160, 360);
+  servoPosition = clamp(servoPosition, 160, 360);
+
       Serial.print("Y = ");
       Serial.print(servoPosition);
       Serial.println(" degrees");
 
+
+/*
       ledcWrite(SERVO_CHN[0], servoPosition);
 ledcWrite(SERVO_CHN[1], servoPosition);
 change this code so the first line writes the real value od servoPosition and the second one the opposite
@@ -143,7 +171,7 @@ If the first one writes 30 the second one should write -30
 */
   //FrontWings.write(90 + servoPosition);
   ledcWrite(SERVO_CHN[0], servoPosition);
-  ledcWrite(SERVO_CHN[1], 387 - (servoPosition - 227));
+  ledcWrite(SERVO_CHN[1], servoPosition);
 }
 
 void BackStabilization()
@@ -153,13 +181,15 @@ void BackStabilization()
       Serial.print(receiverData.ryAxisValue);
       Serial.println(" degrees");
 */
-  float gyroX = mpu6050.getAngleX() - 35 + receiverData.ryAxisValue;
+  float gyroX = mpu6050.getAngleY() - 35 + receiverData.ryAxisValue;
 /*
       Serial.print("X = ");
-      Serial.print(gyroX);
+      Serial.print(receiverData.ryAxisValue);
       Serial.println(" degrees");
 */
-  int servoPosition = (gyroX + 35) * 177 / 70 + 212;
+  int servoPosition = mapInt(gyroX, -35, 35, 80, 460);
+
+  servoPosition = clamp(servoPosition, 80, 460);
 /*
       Serial.print("X = ");
       Serial.print(servoPosition);
@@ -171,13 +201,17 @@ void BackStabilization()
 
 void VerticalStabilization()
 {
-  float gyroZ = mpu6050.getAngleZ() - 35 + receiverData.rxAxisValue;
+  float gyroZ = - 35 + receiverData.rxAxisValue;
 /*
       Serial.print("Z = ");
       Serial.print(gyroZ);
-      Serial.println(" degrees");
+      Serial.println(" ");
 */
-  int servoPosition = (gyroZ + 35) * 140 / 70 + 237;
+  //int servoPosition = mapInt(gyroZ, -35, 35, 500, 100);
+
+  int servoPosition = mapInt(gyroZ, -35, 35, 80, 460);
+
+  servoPosition = clamp(servoPosition, 80, 460);
 /*
       Serial.print("Y = ");
       Serial.print(servoPosition);
@@ -189,12 +223,12 @@ void VerticalStabilization()
 
 void ESC_CONTROL()
 {
-  int speed = map(receiverData.potValue, 0, 255, 1005, 1308);
-
+  int speed = mapInt(receiverData.potValue, 0, 255, 1005, 1308);
+/*
       Serial.print("Speed = ");
       Serial.print(speed);
       Serial.println("");
-
+*/
   
   //FrontWings.write(90 + servoPosition);
   //ledcWrite(ESC_CHN, receiverData.potValue);
