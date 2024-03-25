@@ -8,8 +8,8 @@
 
 
 // ------------------------------ SENSOR PINS start ------------------------------ //
-#define SDA 20
-#define SCL 21
+#define SDA 20 // NARANDZASTA 
+#define SCL 21 // ZUTA
 // ------------------------------ SENSOR PINS end ------------------------------ //
 
 
