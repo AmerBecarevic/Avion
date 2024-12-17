@@ -30,9 +30,7 @@ MPU6050 mpu6050(Wire); // Attach the IIC
 // ------------------------------ SERVO MOTORS start ------------------------------ //
 
 byte ESC_PIN = 14;
-byte ESC_CHN = 4;
 byte SERVO_PINS[4] = {10, 11, 12, 13};
-byte SERVO_CHN[4] = {0, 1, 2, 3};
 #define SERVO_FRQ 50 //define the pwm frequency
 #define SERVO_BIT 12 //define the pwm precision
 
@@ -59,7 +57,7 @@ struct PacketData
 PacketData receiverData;
 
 // callback function that will be executed when data is received
-void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) 
+void OnDataRecv(const esp_now_recv_info* mac, const uint8_t* incomingData, int len) 
 {
   if (len == 0)
   {
@@ -134,9 +132,9 @@ void Wheels()
   Serial.println(" m");
 */
   if(bme.readAltitude(seaLevelPressure) > start_altitude + 2)
-    ledcWrite(SERVO_CHN[3], 512);
+    ledcWrite(SERVO_PINS[3], 512);
   else
-    ledcWrite(SERVO_CHN[3], 307);
+    ledcWrite(SERVO_PINS[3], 307);
   
 }
 
@@ -170,8 +168,8 @@ change this code so the first line writes the real value od servoPosition and th
 If the first one writes 30 the second one should write -30
 */
   //FrontWings.write(90 + servoPosition);
-  ledcWrite(SERVO_CHN[0], servoPosition);
-  ledcWrite(SERVO_CHN[1], servoPosition);
+  ledcWrite(SERVO_PINS[0], servoPosition);
+  ledcWrite(SERVO_PINS[1], servoPosition);
 }
 
 void BackStabilization()
@@ -196,7 +194,7 @@ void BackStabilization()
       Serial.println(" degrees");
 */
   //FrontWings.write(90 + servoPosition);
-  ledcWrite(SERVO_CHN[2], servoPosition);
+  ledcWrite(SERVO_PINS[2], servoPosition);
 }
 
 void VerticalStabilization()
@@ -218,7 +216,7 @@ void VerticalStabilization()
       Serial.println(" degrees");
 */
   //FrontWings.write(90 + servoPosition);
-  ledcWrite(SERVO_CHN[3], servoPosition);
+  ledcWrite(SERVO_PINS[3], servoPosition);
 }
 
 void ESC_CONTROL()
@@ -232,7 +230,7 @@ void ESC_CONTROL()
   
   //FrontWings.write(90 + servoPosition);
   //ledcWrite(ESC_CHN, receiverData.potValue);
-  ledcWrite(ESC_CHN, speed);
+  ledcWrite(ESC_PIN, speed);
 }
 // ------------------------------ CONTROL AND STABILIZATION end ------------------------------ //
 
@@ -243,10 +241,11 @@ void ESC_CONTROL()
 
 // ------------------------------ SETUP start ------------------------------ //
 
-void servo_set_pin(int pin, byte chn) {
- ledcSetup(chn, SERVO_FRQ, SERVO_BIT);
- ledcAttachPin(pin, chn);
+void servo_set_pin(int pin) {
+ ledcAttach(pin, SERVO_FRQ, SERVO_BIT);
 }
+
+
 
 void setup() 
 {
@@ -263,10 +262,10 @@ void setup()
 
   for(int i = 0; i < 4; i++)
   {
-    servo_set_pin(SERVO_PINS[i], SERVO_CHN[i]);
+    servo_set_pin(SERVO_PINS[i]);
   }
 
-  servo_set_pin(ESC_PIN, ESC_CHN);
+  servo_set_pin(ESC_PIN);
  
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
